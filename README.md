@@ -1,2 +1,9 @@
 # numerical-solvers-octave
-Código y archivo de resolución de un proyecto de Análisis Numérico donde se utilizó MDF y MEF para aproximar funciones utilizando Octave para programar.
+
+Esta es la resolución del proyecto final que realicé para la cátedra de Análisis Numérico de la carrera Ingeniería en Sistemas de Información. En este repositorio se puede encontrar la resolución en PDF del proyecto, donde describo, explico y resuelvo los distintos puntos acompañandolos de las gráficas y resultados obtenidos de la aplicación de los distintos métodos que programé utilizando Octave (que es la alternativa de código abierto de MatLab, son extremadamente similares).
+
+Básicamente el proyecto presenta el mismo problema, que está orientado a un dispositivo que emite señal Wi-Fi dividiéndose primeramente en un problema de una dimensión y luego el mismo pero en dos dimensiones. Dónde no se tiene la función que explica el comportamiento de esta señal pero si información cercana a la misma como la expresión en derivadas parciales que la gobierna.
+
+En la resolución del trabajo se utiliza: explicación de condiciones de borde para su posterior aplicación, expresión variacional de problemas, Método de Diferencias Finitas con distintos tamaños de Paso y Método de Elementos Finitos con distintos tamaños de Malla, triangulación o división del dominio del problema en elementos finitos, estimación y corroboración de errores teóricos y reales y por último un problema extra que introduce un objeto oscuro/opaco en medio de la señal Wi-Fi para resolver como se comporta la señal con su presencia.
+
+Básicamente una vez resueltos los métodos tanto MEF y MDF, se programaron funciones/algoritmos (que son los que están subidos en el archivo txt) con los que se experimentó para poder obtener resultados aproximados/numéricos y realizar un análisis pertienente contra la solución analítica de los problemas que normalmente no se tiene y se puede aproximar de la misma forma que se hizo en este trabajo, lo que explica la utilidad del conocimiento y uso de estos métodos.

@@ -1,0 +1,365 @@
+3.2
+
+clear all
+figure(1)
+d = 1;
+rho_0 = 1;
+e_r = 1;
+e_0 = 1;
+V_0 = 1;
+xi = [0:d/100: d];
+U = (rho_0 / (e_0 * e_r)) * xi.^2/2 ...
++ (( - rho_0 / (e_0 * e_r)) * d/2 - V_0/d) * xi ...
++ V_0;
+plot(xi, U, 'r')
+n = 101;
+h = d / (n - 1);
+a = (rho_0 / (e_0 * e_r));
+M = (-2) * diag(ones(n, 1)) ...
++ diag(ones(n - 1, 1), 1) ...
++ diag(ones(n - 1, 1), -1);
+b = h^(2) * a * ones(n, 1);
+M(1, :) = 0; M(1, 1) = 1;
+M(n, :) = 0; M(n, n) = 1;
+b(1) = V_0;
+b(n) = 0;
+u = M\b;
+x = [0: h: d];
+plot(xi, U, 'r', x, u, '*b')
+
+Para graficar el error, ejecutar las siguientes líneas luego de las anteriores:
+
+figure(2)
+error = U - u';
+plot(x, error, 'b')
+xlabel('x')
+ylabel('Error')
+title('Diferencia entre solución analítica y numérica')
+grid on
+
+
+3.4
+
+function galerkin_poisson(N)
+  % Parámetros del problema
+  V0 = 100;        % Potencial en x = 0
+  d = 1;           % Distancia entre las placas
+  rho0 = 1;        % Densidad de carga
+  epsilon_r = 1;   % Constante dieléctrica relativa
+  epsilon_0 = 8.85e-12; % Permisividad del vacío
+
+  % Tamaño del paso
+  h = d / N;
+
+  % Coordenadas nodales
+  x = linspace(0, d, N+1)';
+
+  % Construcción de la matriz de rigidez K y el vector de carga F
+  K = zeros(N+1, N+1);
+  F = zeros(N+1, 1);
+
+  for i = 2:N
+    K(i, i-1) = -1 ;
+    K(i, i)   = 2 ;
+    K(i, i+1) = -1 ;
+    F(i)      = -1; %valor de la constante
+  end
+
+  % Condiciones de contorno
+  K(1, :) = 0;
+  K(1, 1) = 1;
+  F(1) = V0;
+
+  K(N+1, :) = 0;
+  K(N+1, N+1) = 1;
+  F(N+1) = 0;
+
+  % Resolución del sistema K * V = F
+  V = K \ F;
+
+  % Graficar la solución
+  figure;
+  plot(x,V, 'bo-', 'linewidth', 2, 'DisplayName', 'Método de Galerkin');
+  hold on;
+  xlabel('x');
+  ylabel('Potencial V(x)');
+  title(['Método de Galerkin con N = ', num2str(N)]);
+  legend('show');
+  grid on;
+  hold off;
+end
+
+
+4.c
+
+MDF
+% Tamaño de paso y potencial de placa superior
+h = 0.25;
+V0 = 1;
+
+% Aquí se genera la cuadrícula. La misma se adecua al valor utilizado de h
+x = 0:h:1;
+y = 0:h:1;
+nx = length(x); 
+ny = length(y);
+
+% Inicializacion
+V = zeros(ny, nx);
+
+% Condiciones de frontera donde V<>0
+V(end, :) = V0;
+
+% Método de iteración: Gauss-Seidel
+tolerance = 1e-5;
+max_iterations = 10000;
+iterations = 0;
+error = inf;
+
+while error > tolerance && iterations < max_iterations
+    V_old = V;  % Guardar la matriz de la iteración anterior
+    
+    % Iteracion sobre la igualdad obtenida
+    for j = 2:ny-1
+        for i = 2:nx-1
+            V(j, i) = 0.25 * (V(j+1, i) + V(j-1, i) + V(j, i+1) + V(j, i-1));
+        end
+    end
+    
+    % Error
+    error = max(max(abs(V - V_old)));
+    iterations = iterations + 1;
+end
+
+% Mostrar grafico
+[X, Y] = meshgrid(x, y);
+figure;
+contourf(X, Y, V, 20, 'LineColor', 'none');
+colorbar;
+title(['Distribución del potencial eléctrico (h = ', num2str(h), ')']);
+xlabel('x');
+ylabel('y');
+
+MEF
+% Parámetros de la caja
+w = 1.0;  % ancho de la caja
+h = 1.0;  % altura de la caja
+V0 = 1.0; % potencial en la pared superior
+
+% Tamaño de la malla (asegurarse de que sea par)
+cant = 4;
+Nx = cant; % número de divisiones en x
+Ny = cant; % número de divisiones en y
+if mod(Nx, 2) ~= 0 || mod(Ny, 2) ~= 0
+    error('Nx y Ny deben ser números pares.');
+end
+dx = w / Nx;
+dy = h / Ny;
+
+% Generar la malla de nodos
+y = linspace(0, w, Nx + 1);
+x = linspace(0, h, Ny + 1);
+[Y, X] = meshgrid(y, x);
+nodes = [X(:), Y(:)];
+
+% Número total de nodos
+num_nodes = (Nx + 1) * (Ny + 1);
+
+% Inicializar la matriz de rigidez y el vector de carga
+K = sparse(num_nodes, num_nodes);
+F = zeros(num_nodes, 1);
+
+% Función auxiliar para encontrar el índice del nodo (i, j)
+node_index = @(i, j) j * (Nx + 1) + i + 1;
+
+% Construir la matriz de rigidez
+triangles = []; % Para almacenar los triángulos
+for j = 1:Ny
+    for i = 1:Nx
+        % Índices de los nodos del elemento rectangular
+        n1 = node_index(i - 1, j - 1);
+        n2 = node_index(i, j - 1);
+        n3 = node_index(i, j);
+        n4 = node_index(i - 1, j);
+        
+        % Dividir cada elemento en dos triángulos
+        triangles = [triangles; n1, n2, n3];
+        triangles = [triangles; n1, n3, n4];
+
+        % Matriz de rigidez local para cada triángulo
+        for k = 1:2
+            tri = triangles(end - (2 - k), :);
+            x_tri = nodes(tri, 1);
+            y_tri = nodes(tri, 2);
+            
+            % Área del triángulo
+            A = polyarea(x_tri, y_tri);
+            
+            % Gradientes de funciones de forma lineales
+            grad_N = [(y_tri(2) - y_tri(3)), (y_tri(3) - y_tri(1)), (y_tri(1) - y_tri(2));
+                      (x_tri(3) - x_tri(2)), (x_tri(1) - x_tri(3)), (x_tri(2) - x_tri(1))] / (2 * A);
+            
+            % Matriz local de rigidez
+            K_local = A * (grad_N' * grad_N);
+            
+            % Sumar a la matriz global
+            K(tri, tri) = K(tri, tri) + K_local;
+        end
+    end
+end
+
+% Aplicar condiciones de frontera
+for j = 0:Ny
+    for i = 0:Nx
+        idx = node_index(i, j);
+        if i == 0 || i == Nx || j == 0
+            K(idx, :) = 0;
+            K(idx, idx) = 1;
+            F(idx) = 0;
+        end
+        if j == Ny
+            K(idx, :) = 0;
+            K(idx, idx) = 1;
+            F(idx) = V0;
+        end
+    end
+end
+
+% Resolver el sistema de ecuaciones
+V = K \ F;
+
+% Reorganizar la solución para graficar
+V_matrix = reshape(V, Ny + 1, Nx + 1);  % Cambiar el reshape
+
+% Transponer para mostrar como la solución analítica
+V_matrix = V_matrix';
+
+% Graficar la distribución de potencial
+figure;
+contourf(Y, X, V_matrix, 20);
+colorbar;
+title('Distribución del Potencial Eléctrico (Método de Elementos Finitos)');
+xlabel('y');
+ylabel('x');
+hold on;
+
+% Dibujar la malla de elementos
+for k = 1:size(triangles, 1)
+    tri = triangles(k, :);
+    plot(nodes(tri([1, 2, 3, 1]), 2), nodes(tri([1, 2, 3, 1]), 1), 'k-');
+end
+hold off;
+
+
+4.e
+MEF
+
+%El error para este método se calculó utilizando:
+
+% Solución analítica truncada con 50 términos
+V_analytical = zeros(Ny + 1, Nx + 1);
+for k = 1:2:50
+    V_analytical += (4 * V0 / (pi * k)) * sin(k * pi * Y / w) .* sinh(k * pi * X / w) / sinh(k * pi * h / w);
+end
+
+% Calcular el error
+error = sqrt(sum(sum((V_matrix - V_analytical).^2)));
+
+%Y luego multiplicando el resultado por h (ancho del delta), logrando así la comparación con h^2.
+
+4.f
+
+% Parámetros del dominio
+w = 1;               % Ancho del rectángulo
+h = 1;               % Altura del rectángulo
+N_x = 50;            % Número de puntos en x
+N_y = 50;            % Número de puntos en y
+V0 = 1;              % Potencial en el borde superior
+
+% Parámetros del círculo
+r = 1/6;             % Radio del círculo
+circle_x = w/2;      % Coordenada x del centro del círculo
+circle_y = h/2;      % Coordenada y del centro del círculo
+
+% Discretización del dominio
+x = linspace(0, w, N_x);
+y = linspace(0, h, N_y);
+dx = x(2) - x(1);
+dy = y(2) - y(1);
+
+% Inicialización de la malla de potencial
+V = zeros(N_x, N_y);
+
+% Condiciones de frontera
+V(:, end) = V0;        % Borde superior (y = h)
+V(:, 1) = 0;           % Borde inferior (y = 0)
+V(1, :) = 0;           % Borde izquierdo (x = 0)
+V(end, :) = 0;         % Borde derecho (x = w)
+
+% Máscara para el círculo (identifica puntos dentro del círculo)
+circle_mask = false(N_x, N_y);
+for i = 1:N_x
+    for j = 1:N_y
+        if ( (x(i) - circle_x)^2 + (y(j) - circle_y)^2 ) < r^2
+            circle_mask(i, j) = true;
+        end
+    end
+end
+
+% Iteración de Diferencias Finitas
+max_iter = 10000;
+tolerance = 1e-6;
+
+for iter = 1:max_iter
+    V_old = V;
+
+    for i = 2:N_x-1
+        for j = 2:N_y-1
+            % Saltar los puntos dentro del círculo
+            if circle_mask(i, j)
+                continue;
+            end
+            % Actualización de V usando diferencias finitas
+            V(i, j) = (V(i+1, j) + V(i-1, j)) * (dy^2) + (V(i, j+1) + V(i, j-1)) * (dx^2);
+            V(i, j) = V(i, j) / (2 * (dx^2 + dy^2));
+        end
+    end
+
+    % Aplicar la condición de Neumann (derivada normal nula) en el borde del círculo
+    for i = 2:N_x-1
+        for j = 2:N_y-1
+            if circle_mask(i, j)
+                % Promediar con los puntos vecinos fuera del círculo
+                neighbors = [];
+                if ~circle_mask(i+1, j), neighbors = [neighbors, V(i+1, j)]; end
+                if ~circle_mask(i-1, j), neighbors = [neighbors, V(i-1, j)]; end
+                if ~circle_mask(i, j+1), neighbors = [neighbors, V(i, j+1)]; end
+                if ~circle_mask(i, j-1), neighbors = [neighbors, V(i, j-1)]; end
+                if ~isempty(neighbors)
+                    V(i, j) = mean(neighbors);
+                end
+            end
+        end
+    end
+
+    % Criterio de convergencia
+    if max(max(abs(V - V_old))) < tolerance
+        printf('Convergencia alcanzada en %d iteraciones\n', iter);
+        break;
+    end
+end
+
+% Gráfica del potencial
+[X, Y] = meshgrid(x, y);
+figure;
+contourf(X, Y, V', 20);
+colorbar;
+title('Distribución del Potencial V');
+xlabel('x');
+ylabel('y');
+hold on;
+
+% Dibujar el círculo
+theta = linspace(0, 2*pi, 100);
+plot(circle_x + r*cos(theta), circle_y + r*sin(theta), 'k', 'LineWidth', 2);
+hold off;
+
